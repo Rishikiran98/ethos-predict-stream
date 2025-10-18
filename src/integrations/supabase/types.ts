@@ -14,16 +14,290 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      audit_logs: {
+        Row: {
+          created_at: string
+          current_hash: string
+          details: Json
+          id: string
+          message: string
+          operation_type: string
+          previous_hash: string | null
+          sequence_number: number
+          status: Database["public"]["Enums"]["audit_status"]
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          current_hash: string
+          details?: Json
+          id?: string
+          message: string
+          operation_type: string
+          previous_hash?: string | null
+          sequence_number?: number
+          status: Database["public"]["Enums"]["audit_status"]
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          current_hash?: string
+          details?: Json
+          id?: string
+          message?: string
+          operation_type?: string
+          previous_hash?: string | null
+          sequence_number?: number
+          status?: Database["public"]["Enums"]["audit_status"]
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      community_feedback: {
+        Row: {
+          admin_notes: string | null
+          community_area: string
+          created_at: string
+          description: string
+          feedback_id: string
+          feedback_type: Database["public"]["Enums"]["feedback_type"]
+          id: string
+          prediction_id: string | null
+          reporter_id: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          community_area: string
+          created_at?: string
+          description: string
+          feedback_id: string
+          feedback_type: Database["public"]["Enums"]["feedback_type"]
+          id?: string
+          prediction_id?: string | null
+          reporter_id?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          community_area?: string
+          created_at?: string
+          description?: string
+          feedback_id?: string
+          feedback_type?: Database["public"]["Enums"]["feedback_type"]
+          id?: string
+          prediction_id?: string | null
+          reporter_id?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_feedback_prediction_id_fkey"
+            columns: ["prediction_id"]
+            isOneToOne: false
+            referencedRelation: "predictions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fairness_evaluations: {
+        Row: {
+          calibration_error: number
+          community_metrics: Json
+          created_at: string
+          created_by: string | null
+          demographic_parity_diff: number
+          equalized_odds_ratio: number
+          evaluation_date: string
+          f1_variance: number
+          id: string
+          model_version: string
+          passed_thresholds: boolean
+        }
+        Insert: {
+          calibration_error: number
+          community_metrics?: Json
+          created_at?: string
+          created_by?: string | null
+          demographic_parity_diff: number
+          equalized_odds_ratio: number
+          evaluation_date?: string
+          f1_variance: number
+          id?: string
+          model_version: string
+          passed_thresholds: boolean
+        }
+        Update: {
+          calibration_error?: number
+          community_metrics?: Json
+          created_at?: string
+          created_by?: string | null
+          demographic_parity_diff?: number
+          equalized_odds_ratio?: number
+          evaluation_date?: string
+          f1_variance?: number
+          id?: string
+          model_version?: string
+          passed_thresholds?: boolean
+        }
+        Relationships: []
+      }
+      model_artifacts: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          mae: number | null
+          metadata: Json
+          model_binary: string
+          r2_score: number | null
+          rmse: number | null
+          training_time_seconds: number | null
+          version: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          mae?: number | null
+          metadata?: Json
+          model_binary: string
+          r2_score?: number | null
+          rmse?: number | null
+          training_time_seconds?: number | null
+          version: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          mae?: number | null
+          metadata?: Json
+          model_binary?: string
+          r2_score?: number | null
+          rmse?: number | null
+          training_time_seconds?: number | null
+          version?: string
+        }
+        Relationships: []
+      }
+      predictions: {
+        Row: {
+          community_area: string
+          confidence: number
+          contributing_factors: Json
+          created_at: string
+          created_by: string | null
+          date_range_end: string
+          date_range_start: string
+          id: string
+          model_version: string
+          predicted_crimes: number
+          prediction_id: string
+          risk_level: string
+          status: Database["public"]["Enums"]["prediction_status"] | null
+        }
+        Insert: {
+          community_area: string
+          confidence: number
+          contributing_factors?: Json
+          created_at?: string
+          created_by?: string | null
+          date_range_end: string
+          date_range_start: string
+          id?: string
+          model_version: string
+          predicted_crimes: number
+          prediction_id: string
+          risk_level: string
+          status?: Database["public"]["Enums"]["prediction_status"] | null
+        }
+        Update: {
+          community_area?: string
+          confidence?: number
+          contributing_factors?: Json
+          created_at?: string
+          created_by?: string | null
+          date_range_end?: string
+          date_range_start?: string
+          id?: string
+          model_version?: string
+          predicted_crimes?: number
+          prediction_id?: string
+          risk_level?: string
+          status?: Database["public"]["Enums"]["prediction_status"] | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "public" | "analyst" | "admin"
+      audit_status: "success" | "warning" | "error" | "info"
+      feedback_type: "bias_report" | "accuracy_concern" | "general"
+      prediction_status: "pending" | "completed" | "failed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +424,11 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["public", "analyst", "admin"],
+      audit_status: ["success", "warning", "error", "info"],
+      feedback_type: ["bias_report", "accuracy_concern", "general"],
+      prediction_status: ["pending", "completed", "failed"],
+    },
   },
 } as const
