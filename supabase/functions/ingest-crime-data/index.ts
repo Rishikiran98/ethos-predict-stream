@@ -26,9 +26,9 @@ serve(async (req) => {
     const sodaAppToken = Deno.env.get("SODA_APP_TOKEN") || "";
     const chicagoApiUrl = new URL("https://data.cityofchicago.org/resource/ijzp-q8t2.json");
     
-    // Add query parameters for efficient data fetching
+    // Add query parameters for efficient data fetching (reduced limit to avoid CPU timeout)
     chicagoApiUrl.searchParams.append("$select", "case_number,date,primary_type,community_area,arrest,latitude,longitude");
-    chicagoApiUrl.searchParams.append("$limit", "5000");
+    chicagoApiUrl.searchParams.append("$limit", "1000");
     chicagoApiUrl.searchParams.append("$order", "date DESC");
     
     const headers: Record<string, string> = {
@@ -48,49 +48,59 @@ serve(async (req) => {
     const crimeData = await response.json();
     console.log(`Fetched ${crimeData.length} records from Chicago API`);
 
+    interface CrimeRecord {
+      case_number: string;
+      date: string;
+      primary_type: string;
+      community_area?: string;
+      arrest?: string | boolean;
+      latitude?: string;
+      longitude?: string;
+    }
+
     let newRows = 0;
     let duplicates = 0;
     let errors = 0;
     const errorDetails: string[] = [];
 
-    // Process and insert data
-    for (const record of crimeData) {
-      try {
-        // Skip records without required fields
-        if (!record.case_number || !record.date || !record.primary_type) {
-          continue;
-        }
+    // Process records in batches to avoid CPU timeout
+    const batchSize = 50;
+    for (let i = 0; i < crimeData.length; i += batchSize) {
+      const batch = crimeData.slice(i, i + batchSize);
+      
+      const recordsToInsert = batch
+        .filter((record: CrimeRecord) => record.case_number && record.date && record.primary_type)
+        .map((record: CrimeRecord) => ({
+          case_number: record.case_number,
+          date: record.date,
+          primary_type: record.primary_type,
+          community_area: record.community_area ? parseInt(record.community_area) : null,
+          arrest: record.arrest === "true" || record.arrest === true,
+          latitude: record.latitude ? parseFloat(record.latitude) : null,
+          longitude: record.longitude ? parseFloat(record.longitude) : null,
+        }));
 
-        const { error: insertError } = await supabase
+      if (recordsToInsert.length === 0) continue;
+
+      try {
+        const { data, error: insertError } = await supabase
           .from("crime_stream")
-          .upsert({
-            case_number: record.case_number,
-            date: record.date,
-            primary_type: record.primary_type,
-            community_area: record.community_area ? parseInt(record.community_area) : null,
-            arrest: record.arrest === "true" || record.arrest === true,
-            latitude: record.latitude ? parseFloat(record.latitude) : null,
-            longitude: record.longitude ? parseFloat(record.longitude) : null,
-          }, {
+          .upsert(recordsToInsert, {
             onConflict: "case_number",
-            ignoreDuplicates: true
-          });
+            ignoreDuplicates: false
+          })
+          .select();
 
         if (insertError) {
-          if (insertError.code === "23505") {
-            // Duplicate key error
-            duplicates++;
-          } else {
-            errors++;
-            errorDetails.push(`${record.case_number}: ${insertError.message}`);
-          }
+          errors += recordsToInsert.length;
+          errorDetails.push(`Batch ${i}-${i + batchSize}: ${insertError.message}`);
         } else {
-          newRows++;
+          newRows += data?.length || 0;
         }
       } catch (err) {
-        errors++;
+        errors += recordsToInsert.length;
         const errorMsg = err instanceof Error ? err.message : String(err);
-        errorDetails.push(`${record.case_number}: ${errorMsg}`);
+        errorDetails.push(`Batch ${i}-${i + batchSize}: ${errorMsg}`);
       }
     }
 
