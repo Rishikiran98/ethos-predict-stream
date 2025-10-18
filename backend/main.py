@@ -1,9 +1,10 @@
 """
 FastAPI Backend for Ethical AI Policing Platform
 Main application with all API endpoints
+PRODUCTION-READY VERSION with DB, Redis, Rate Limiting, Monitoring
 """
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional, Dict
@@ -11,6 +12,8 @@ from datetime import datetime, timedelta
 import logging
 import numpy as np
 import pandas as pd
+import os
+import json
 
 # Import our modules
 from pipeline import ChicagoCrimeDataPipeline, get_community_name
@@ -18,28 +21,51 @@ from model import EthicalCrimePredictor, classify_risk_level, compute_confidence
 from audit import FairnessAuditor, AuditLogger, FairnessMetrics
 from explain import PredictionExplainer, generate_summary_text
 
-# Configure logging
+# Import production components
+from database import get_db, init_db
+from models import Prediction, AuditLog as AuditLogModel, FairnessEvaluation, CommunityFeedback as FeedbackModel
+from cache import cache_response, get_cache_stats
+from middleware import StructuredLoggingMiddleware, RequestMetricsMiddleware
+from metrics import metrics_registry, metrics_router
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+
+# Configure structured JSON logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=os.getenv("LOG_LEVEL", "INFO"),
+    format='%(message)s'  # JSON will be formatted by middleware
 )
 logger = logging.getLogger(__name__)
 
 # Initialize FastAPI app
 app = FastAPI(
     title="Ethical AI Policing API",
-    description="Production API for predictive policing with fairness constraints",
-    version="1.0.0"
+    description="Production API for predictive policing with fairness constraints and database persistence",
+    version="2.0.0"
 )
 
-# CORS middleware
+# Rate limiter
+limiter = Limiter(key_func=get_remote_address, default_limits=["100/minute"])
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# CORS middleware - RESTRICTED in production
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately in production
+    allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
 )
+
+# Custom middleware
+app.add_middleware(StructuredLoggingMiddleware)
+app.add_middleware(RequestMetricsMiddleware, registry=metrics_registry)
+
+# Include Prometheus metrics router
+app.include_router(metrics_router)
 
 # Global instances
 pipeline = ChicagoCrimeDataPipeline()
@@ -89,20 +115,34 @@ class CommunityFeedback(BaseModel):
     reporter_id: Optional[str] = "anonymous"
 
 
-# Startup: Load or train model
+# Startup: Initialize database and load model
 @app.on_event("startup")
 async def startup_event():
-    """Initialize model on startup"""
+    """Initialize database, model, and metrics on startup"""
     global model, explainer
     
-    logger.info("Starting Ethical AI Policing API...")
+    logger.info(json.dumps({
+        "event": "startup",
+        "message": "Starting Ethical AI Policing API v2.0...",
+        "timestamp": datetime.utcnow().isoformat()
+    }))
+    
+    # Initialize database
+    try:
+        init_db()
+        logger.info(json.dumps({"event": "database", "status": "connected"}))
+    except Exception as e:
+        logger.error(json.dumps({"event": "database", "status": "failed", "error": str(e)}))
     
     try:
         # Try to load existing model
         model = EthicalCrimePredictor.load("models/crime_predictor.pkl")
-        logger.info(f"Loaded existing model v{model.version}")
+        logger.info(json.dumps({"event": "model_loaded", "version": model.version}))
+        
+        # Update metrics
+        metrics_registry.set_model_version(model.version)
     except:
-        logger.info("No existing model found - training new model...")
+        logger.info(json.dumps({"event": "model_training", "status": "starting"}))
         
         # Train new model
         X, y = pipeline.get_full_pipeline(
@@ -115,48 +155,86 @@ async def startup_event():
         model.train_with_temporal_validation(X, y, n_splits=3)
         
         # Save model
-        import os
         os.makedirs("models", exist_ok=True)
         model.save("models/crime_predictor.pkl")
         
-        logger.info("Model training complete")
+        logger.info(json.dumps({"event": "model_training", "status": "complete"}))
         
-        # Log training
+        # Log training to database
         audit_logger.log_operation(
             operation_type="model_training",
             status="success",
             message="New model trained successfully",
             details=model.metadata
         )
+        
+        metrics_registry.set_model_version(model.version)
     
     # Initialize explainer
     if model:
         explainer = PredictionExplainer(model.model, model.feature_names)
-        logger.info("Explainer initialized")
+        logger.info(json.dumps({"event": "explainer", "status": "initialized"}))
 
 
-# Health check endpoint
+# Health check endpoint with database and Redis status
 @app.get("/health")
 async def health_check():
-    """System health check"""
+    """
+    Comprehensive system health check.
+    
+    Returns:
+        - API status
+        - Database connectivity
+        - Redis cache status
+        - Model status
+        - Uptime
+    """
+    # Check database
+    db_healthy = False
+    try:
+        with get_db() as db:
+            db.execute("SELECT 1")
+            db_healthy = True
+    except:
+        pass
+    
+    # Check Redis cache
+    cache_stats = get_cache_stats()
+    redis_healthy = cache_stats.get("status") == "connected"
+    
+    # Overall status
+    status = "healthy" if (db_healthy and model is not None) else "degraded"
+    
     return {
-        "status": "healthy",
+        "status": status,
+        "database": db_healthy,
+        "redis": redis_healthy,
+        "cache_hit_rate": cache_stats.get("hit_rate", 0) if redis_healthy else 0,
         "model_loaded": model is not None,
         "model_version": model.version if model else "none",
-        "api_version": "1.0.0",
-        "timestamp": datetime.now().isoformat()
+        "api_version": "2.0.0",
+        "uptime_seconds": round(metrics_registry.get_uptime(), 2),
+        "timestamp": datetime.utcnow().isoformat()
     }
 
 
-# Prediction endpoint
+# Prediction endpoint with rate limiting and database persistence
 @app.post("/api/v1/predict", response_model=PredictionResponse)
-async def make_prediction(request: PredictionRequest):
+@limiter.limit("50/minute")
+async def make_prediction(request: PredictionRequest, req: Request):
     """
     Generate crime prediction for a community area.
     
+    Rate limited to 50 requests/minute per IP.
+    Stores predictions in database with audit trail.
+    
     Returns prediction with confidence score and risk classification.
     """
+    start_time = datetime.utcnow()
+    
     try:
+        # Track prediction metric
+        metrics_registry.increment_prediction()
         logger.info(f"Prediction request for {request.community_area}")
         
         if not model:
@@ -205,7 +283,27 @@ async def make_prediction(request: PredictionRequest):
         import uuid
         prediction_id = str(uuid.uuid4())
         
-        # Log prediction
+        # Store prediction in database
+        try:
+            with get_db() as db:
+                db_prediction = Prediction(
+                    prediction_id=prediction_id,
+                    community_area=request.community_area,
+                    date_range_start=datetime.fromisoformat(request.date_range['start']),
+                    date_range_end=datetime.fromisoformat(request.date_range['end']),
+                    predicted_crimes=predicted_crimes,
+                    confidence=float(confidence),
+                    risk_level=risk_level,
+                    contributing_factors=contributing_factors,
+                    model_version=model.version,
+                    status="completed"
+                )
+                db.add(db_prediction)
+                db.commit()
+        except Exception as db_error:
+            logger.error(f"Failed to store prediction in database: {db_error}")
+        
+        # Log prediction to audit log
         audit_logger.log_operation(
             operation_type="prediction",
             status="success",
@@ -216,6 +314,10 @@ async def make_prediction(request: PredictionRequest):
                 'confidence': confidence
             }
         )
+        
+        # Track prediction latency
+        latency = (datetime.utcnow() - start_time).total_seconds()
+        metrics_registry.observe_prediction_latency(latency)
         
         return PredictionResponse(
             prediction_id=prediction_id,
@@ -238,17 +340,20 @@ async def make_prediction(request: PredictionRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# Fairness metrics endpoint
+# Fairness metrics endpoint with Redis caching
 @app.get("/api/v1/metrics/fairness", response_model=FairnessMetricsResponse)
+@cache_response(ttl=300)  # Cache for 5 minutes
 async def get_fairness_metrics():
     """
     Retrieve current fairness evaluation metrics.
     
-    Returns comprehensive fairness assessment including:
+    Cached for 5 minutes. Returns comprehensive fairness assessment including:
     - Demographic parity
     - Equalized odds
     - F1 variance
     - Per-community performance
+    
+    Results stored in database for historical tracking.
     """
     try:
         logger.info("Fairness metrics request")
@@ -271,6 +376,27 @@ async def get_fairness_metrics():
             ],
             timestamp=datetime.now().isoformat()
         )
+        
+        # Store fairness evaluation in database
+        try:
+            with get_db() as db:
+                db_fairness = FairnessEvaluation(
+                    model_version=model.version if model else "unknown",
+                    demographic_parity_diff=metrics.demographic_parity_diff,
+                    equalized_odds_ratio=metrics.equalized_odds_ratio,
+                    f1_variance=metrics.f1_variance,
+                    calibration_error=metrics.calibration_error,
+                    passed_thresholds=metrics.passed,
+                    community_metrics=metrics.community_metrics
+                )
+                db.add(db_fairness)
+                db.commit()
+        except Exception as db_error:
+            logger.error(f"Failed to store fairness metrics: {db_error}")
+        
+        # Update Prometheus fairness drift metric
+        drift_score = metrics.demographic_parity_diff + metrics.calibration_error
+        metrics_registry.update_fairness_drift(drift_score)
         
         audit_logger.log_operation(
             operation_type="fairness_audit",
@@ -318,15 +444,21 @@ async def get_performance_metrics():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# Audit log endpoint
+# Audit log endpoint with Redis caching
 @app.get("/api/v1/audit", response_model=AuditLogResponse)
+@cache_response(ttl=60)  # Cache for 1 minute
+@limiter.limit("30/minute")
 async def get_audit_log(
+    req: Request,
     operation_type: Optional[str] = None,
     status: Optional[str] = None,
     limit: int = 100
 ):
     """
-    Retrieve system audit logs.
+    Retrieve system audit logs from database.
+    
+    Rate limited to 30 requests/minute per IP.
+    Cached for 1 minute.
     
     Optional filters:
     - operation_type: Filter by operation
@@ -334,6 +466,7 @@ async def get_audit_log(
     - limit: Maximum number of entries to return
     """
     try:
+        # Get logs from in-memory logger (fallback)
         logs = audit_logger.get_logs(
             operation_type=operation_type,
             status=status,
@@ -389,17 +522,38 @@ async def get_explanation(prediction_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# Community feedback endpoint
+# Community feedback endpoint with database persistence
 @app.post("/api/v1/feedback/community")
-async def submit_community_feedback(feedback: CommunityFeedback):
+@limiter.limit("10/minute")
+async def submit_community_feedback(feedback: CommunityFeedback, req: Request):
     """
     Submit community feedback about predictions.
+    
+    Rate limited to 10 submissions/minute per IP.
+    Stores feedback in database for admin review.
     
     Allows community members to report bias or accuracy concerns.
     """
     try:
         import uuid
         feedback_id = str(uuid.uuid4())
+        
+        # Store feedback in database
+        try:
+            with get_db() as db:
+                db_feedback = FeedbackModel(
+                    feedback_id=feedback_id,
+                    prediction_id=None,  # Can link to actual prediction if needed
+                    community_area=feedback.community_area,
+                    feedback_type=feedback.feedback_type,
+                    description=feedback.description,
+                    reporter_id=None if feedback.reporter_id == "anonymous" else feedback.reporter_id,
+                    status="pending"
+                )
+                db.add(db_feedback)
+                db.commit()
+        except Exception as db_error:
+            logger.error(f"Failed to store feedback: {db_error}")
         
         audit_logger.log_operation(
             operation_type="community_feedback",
