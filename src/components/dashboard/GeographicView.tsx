@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, TrendingUp, AlertTriangle } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { MapPin, TrendingUp, AlertTriangle, BarChart3 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
@@ -76,9 +77,11 @@ const GeographicView = () => {
   }, []) || [];
 
   // Sort by crime count
-  const topHotspots = hotspots
-    .sort((a, b) => b.crimes - a.crimes)
-    .slice(0, 6);
+  const sortedHotspots = hotspots.sort((a, b) => b.crimes - a.crimes);
+  const topHotspots = sortedHotspots.slice(0, 6);
+  
+  // Calculate total crimes for percentage
+  const totalCrimes = hotspots.reduce((sum, h) => sum + h.crimes, 0);
 
   // Prepare choropleth data
   const choroplethData = geoData && predictions ? [{
@@ -241,6 +244,96 @@ const GeographicView = () => {
             <div className="text-center py-8 text-muted-foreground">
               <p className="text-sm">No predictions available yet</p>
               <p className="text-xs mt-1">Make a prediction to see priority areas</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Comprehensive Community Areas Table */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-primary" />
+            <div>
+              <CardTitle>All Community Areas - Detailed Statistics</CardTitle>
+              <CardDescription>
+                Complete breakdown of predicted crime incidents across all areas
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="space-y-2">
+              {[1, 2, 3, 4, 5].map(i => (
+                <div key={i} className="h-12 bg-muted animate-pulse rounded" />
+              ))}
+            </div>
+          ) : sortedHotspots.length > 0 ? (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[60px]">Rank</TableHead>
+                    <TableHead>Community Area</TableHead>
+                    <TableHead className="text-right">Predicted Crimes</TableHead>
+                    <TableHead className="text-right">% of Total</TableHead>
+                    <TableHead className="text-center">Risk Level</TableHead>
+                    <TableHead className="text-right">Confidence</TableHead>
+                    <TableHead className="text-right">Predictions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sortedHotspots.map((spot, index) => {
+                    const percentage = totalCrimes > 0 ? (spot.crimes / totalCrimes * 100) : 0;
+                    return (
+                      <TableRow key={spot.area}>
+                        <TableCell className="font-medium text-muted-foreground">
+                          #{index + 1}
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-3 w-3 text-muted-foreground" />
+                            {spot.area}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {Math.round(spot.crimes).toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-primary rounded-full transition-all"
+                                style={{ width: `${Math.min(percentage, 100)}%` }}
+                              />
+                            </div>
+                            <span className="text-sm font-medium min-w-[3rem]">
+                              {percentage.toFixed(1)}%
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="outline" className={getRiskColor(spot.risk)}>
+                            {spot.risk}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right text-sm">
+                          {(spot.confidence * 100).toFixed(0)}%
+                        </TableCell>
+                        <TableCell className="text-right text-sm text-muted-foreground">
+                          {spot.count}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <p className="text-sm">No data available yet</p>
+              <p className="text-xs mt-1">Generate predictions to see detailed statistics</p>
             </div>
           )}
         </CardContent>
