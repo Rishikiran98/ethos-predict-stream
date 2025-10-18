@@ -8,9 +8,12 @@ import { ModelPerformance } from "@/components/dashboard/ModelPerformance";
 import { AuditLog } from "@/components/dashboard/AuditLog";
 import { ExplainabilityView } from "@/components/dashboard/ExplainabilityView";
 import { CommunityFeedback } from "@/components/dashboard/CommunityFeedback";
+import { AdminPanel } from "@/components/dashboard/AdminPanel";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("overview");
+  const { userRole } = useAuth();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
@@ -18,7 +21,7 @@ const Index = () => {
       
       <main className="container mx-auto px-4 py-6 space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-7 lg:w-auto">
+          <TabsList className="grid w-full grid-cols-8 lg:w-auto">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="fairness">Fairness</TabsTrigger>
             <TabsTrigger value="geography">Geography</TabsTrigger>
@@ -26,6 +29,7 @@ const Index = () => {
             <TabsTrigger value="explain">Explainability</TabsTrigger>
             <TabsTrigger value="feedback">Feedback</TabsTrigger>
             <TabsTrigger value="audit">Audit</TabsTrigger>
+            {userRole === 'admin' && <TabsTrigger value="admin">Admin</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="overview" className="mt-6 space-y-6">
@@ -55,6 +59,12 @@ const Index = () => {
           <TabsContent value="audit" className="mt-6">
             <AuditLog />
           </TabsContent>
+
+          {userRole === 'admin' && (
+            <TabsContent value="admin" className="mt-6">
+              <AdminPanel />
+            </TabsContent>
+          )}
         </Tabs>
       </main>
     </div>
