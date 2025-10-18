@@ -11,6 +11,7 @@ import { ExplainabilityView } from "@/components/dashboard/ExplainabilityView";
 import { CommunityFeedback } from "@/components/dashboard/CommunityFeedback";
 import { AdminPanel } from "@/components/dashboard/AdminPanel";
 import { PredictiveAnalytics } from "@/components/dashboard/PredictiveAnalytics";
+import { AnalyticsView } from "@/components/dashboard/AnalyticsView";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
@@ -27,6 +28,7 @@ const Index = () => {
             <TabsTrigger value="fairness">Fairness</TabsTrigger>
             <TabsTrigger value="geography">Crime Map</TabsTrigger>
             <TabsTrigger value="predict">AI Predict</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
             {userRole && <TabsTrigger value="feedback">Report Crime</TabsTrigger>}
             {userRole === 'admin' && <TabsTrigger value="performance">Performance</TabsTrigger>}
             {userRole === 'admin' && <TabsTrigger value="explain">Explainability</TabsTrigger>}
@@ -44,6 +46,10 @@ const Index = () => {
 
           <TabsContent value="predict" className="mt-6">
             <PredictiveAnalytics />
+          </TabsContent>
+
+          <TabsContent value="analytics" className="mt-6">
+            <AnalyticsView />
           </TabsContent>
 
           {userRole && (
