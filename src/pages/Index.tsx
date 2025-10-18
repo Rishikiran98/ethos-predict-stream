@@ -12,8 +12,8 @@ import { AdminPanel } from "@/components/dashboard/AdminPanel";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState("overview");
   const { userRole } = useAuth();
+  const [activeTab, setActiveTab] = useState(userRole === 'admin' ? "overview" : "fairness");
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
@@ -22,7 +22,7 @@ const Index = () => {
       <main className="container mx-auto px-4 py-6 space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-6 lg:grid-cols-8 lg:w-auto">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
+            {userRole === 'admin' && <TabsTrigger value="overview">Overview</TabsTrigger>}
             <TabsTrigger value="fairness">Fairness</TabsTrigger>
             <TabsTrigger value="geography">Geography</TabsTrigger>
             {userRole === 'admin' && <TabsTrigger value="performance">Performance</TabsTrigger>}
@@ -32,9 +32,11 @@ const Index = () => {
             {userRole === 'admin' && <TabsTrigger value="admin">Admin</TabsTrigger>}
           </TabsList>
 
-          <TabsContent value="overview" className="mt-6 space-y-6">
-            <MetricsOverview onNavigate={setActiveTab} />
-          </TabsContent>
+          {userRole === 'admin' && (
+            <TabsContent value="overview" className="mt-6 space-y-6">
+              <MetricsOverview onNavigate={setActiveTab} />
+            </TabsContent>
+          )}
 
           <TabsContent value="fairness" className="mt-6">
             <FairnessPanel onNavigate={setActiveTab} />

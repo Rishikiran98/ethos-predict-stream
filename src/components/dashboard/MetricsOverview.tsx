@@ -1,6 +1,7 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, Activity, Zap, Scale, Target } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { TrendingUp, TrendingDown, Activity, Users, AlertTriangle, Shield } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 
 interface MetricCardProps {
   title: string;
@@ -52,91 +53,108 @@ interface MetricsOverviewProps {
 export const MetricsOverview = ({ onNavigate }: MetricsOverviewProps) => {
   return (
     <div className="space-y-6">
-      {/* Key Performance Indicators */}
+      {/* Crime Statistics Overview */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <MetricCard
-          title="Model Accuracy (R²)"
-          value="0.723"
-          change={-27.7}
+          title="Total Crimes (2024)"
+          value="84,293"
+          change={-12.4}
           trend="down"
-          icon={<Target className="h-4 w-4 text-primary" />}
-          description="After data leakage prevention • Click for map"
+          icon={<AlertTriangle className="h-4 w-4 text-destructive" />}
+          description="Compared to 2023 • View geographic data"
           onClick={() => onNavigate("geography")}
         />
         <MetricCard
-          title="Processing Speed"
-          value="8.4x"
-          change={740}
-          trend="up"
-          icon={<Zap className="h-4 w-4 text-warning" />}
-          description="Distributed computing gain • Click for map"
+          title="Violent Crimes"
+          value="18,547"
+          change={-8.2}
+          trend="down"
+          icon={<Shield className="h-4 w-4 text-warning" />}
+          description="22% of total crimes • View details"
           onClick={() => onNavigate("geography")}
         />
         <MetricCard
-          title="Fairness Score"
-          value="0.93"
-          change={15.2}
-          trend="up"
-          icon={<Scale className="h-4 w-4 text-success" />}
-          description="F1 variance ≤0.07 • Click for map"
+          title="Property Crimes"
+          value="52,891"
+          change={-14.1}
+          trend="down"
+          icon={<Activity className="h-4 w-4 text-primary" />}
+          description="63% of total crimes • View map"
           onClick={() => onNavigate("geography")}
         />
         <MetricCard
-          title="Memory Efficiency"
-          value="72%"
-          change={72}
+          title="Clearance Rate"
+          value="31.2%"
+          change={4.8}
           trend="up"
-          icon={<Activity className="h-4 w-4 text-secondary" />}
-          description="Reduction vs baseline • Click for map"
+          icon={<TrendingUp className="h-4 w-4 text-success" />}
+          description="Cases resolved • View trends"
           onClick={() => onNavigate("geography")}
         />
       </div>
 
-      {/* System Status */}
+      {/* Crime Categories Breakdown */}
       <Card>
         <CardHeader>
-          <CardTitle>System Health & Resource Utilization</CardTitle>
+          <CardTitle>Crime Categories (2024)</CardTitle>
+          <CardDescription>Distribution of reported incidents across Chicago</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Dask Cluster (6 workers)</span>
-              <span className="font-medium">87% utilized</span>
+              <span className="text-muted-foreground">Theft</span>
+              <span className="font-medium">28,347 incidents (33.6%)</span>
             </div>
-            <Progress value={87} className="h-2" />
+            <Progress value={34} className="h-2" />
           </div>
           
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Data Pipeline Throughput</span>
-              <span className="font-medium">2.3M records/hour</span>
+              <span className="text-muted-foreground">Battery</span>
+              <span className="font-medium">15,923 incidents (18.9%)</span>
             </div>
-            <Progress value={92} className="h-2" />
+            <Progress value={19} className="h-2" />
           </div>
           
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Fairness Gate Pass Rate</span>
-              <span className="font-medium">94.2%</span>
+              <span className="text-muted-foreground">Criminal Damage</span>
+              <span className="font-medium">12,584 incidents (14.9%)</span>
             </div>
-            <Progress value={94} className="h-2" />
+            <Progress value={15} className="h-2" />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Assault</span>
+              <span className="font-medium">9,472 incidents (11.2%)</span>
+            </div>
+            <Progress value={11} className="h-2" />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Other Offenses</span>
+              <span className="font-medium">17,967 incidents (21.3%)</span>
+            </div>
+            <Progress value={21} className="h-2" />
           </div>
         </CardContent>
       </Card>
 
-      {/* Data Quality Metrics */}
+      {/* Demographics & Time Patterns */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card 
           className="cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02]"
           onClick={() => onNavigate("geography")}
         >
           <CardHeader>
-            <CardTitle className="text-base">Records Processed</CardTitle>
+            <CardTitle className="text-base">Peak Crime Hours</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">6,247,891</div>
+            <div className="text-2xl font-bold">6PM - 10PM</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Chicago crime data (2001-2024) • Click for map
+              42% of incidents occur during evening • View patterns
             </p>
           </CardContent>
         </Card>
@@ -146,12 +164,12 @@ export const MetricsOverview = ({ onNavigate }: MetricsOverviewProps) => {
           onClick={() => onNavigate("geography")}
         >
           <CardHeader>
-            <CardTitle className="text-base">Temporal Validation</CardTitle>
+            <CardTitle className="text-base">Most Affected Age Group</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-success">✓ Passed</div>
+            <div className="text-2xl font-bold">25-34 years</div>
             <p className="text-xs text-muted-foreground mt-1">
-              No future data leakage detected • Click for map
+              31% of reported victims • View demographics
             </p>
           </CardContent>
         </Card>
@@ -161,16 +179,52 @@ export const MetricsOverview = ({ onNavigate }: MetricsOverviewProps) => {
           onClick={() => onNavigate("geography")}
         >
           <CardHeader>
-            <CardTitle className="text-base">Geographic Coverage</CardTitle>
+            <CardTitle className="text-base">Community Areas</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">77</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Community areas analyzed • Click to view map
+              Districts monitored across Chicago • View map
             </p>
           </CardContent>
         </Card>
       </div>
+
+      {/* Monthly Trend */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Monthly Crime Trends (Last 12 Months)</CardTitle>
+          <CardDescription>Comparing current year to previous year</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {[
+              { month: "October 2024", current: 7240, previous: 8156, change: -11.2 },
+              { month: "September 2024", current: 7482, previous: 8423, change: -11.2 },
+              { month: "August 2024", current: 7891, previous: 8934, change: -11.7 },
+              { month: "July 2024", current: 8123, previous: 9245, change: -12.1 },
+              { month: "June 2024", current: 7654, previous: 8712, change: -12.1 },
+              { month: "May 2024", current: 6923, previous: 7834, change: -11.6 },
+            ].map((data) => (
+              <div key={data.month} className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium">{data.month}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-muted-foreground">
+                      {data.current.toLocaleString()} incidents
+                    </span>
+                    <Badge variant="outline" className="bg-success/10 text-success border-success/20">
+                      <TrendingDown className="h-3 w-3 mr-1" />
+                      {Math.abs(data.change)}%
+                    </Badge>
+                  </div>
+                </div>
+                <Progress value={(data.current / data.previous) * 100} className="h-1.5" />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
