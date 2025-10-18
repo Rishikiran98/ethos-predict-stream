@@ -35,14 +35,16 @@ export function AIModelPerformance() {
   const { data: activeModel } = useQuery({
     queryKey: ['active-model'],
     queryFn: async () => {
+      // Get most recent prediction to show current AI model version
       const { data, error } = await supabase
-        .from('model_artifacts')
-        .select('*')
-        .eq('is_active', true)
+        .from('predictions')
+        .select('ai_model_used, created_at')
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
       
       if (error) throw error;
-      return data;
+      return data ? { version: data.ai_model_used || 'google/gemini-2.5-flash', created_at: data.created_at } : null;
     },
   });
 
@@ -97,12 +99,12 @@ export function AIModelPerformance() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Active Model Version</CardTitle>
+                <CardTitle className="text-sm font-medium">Primary AI Model</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{activeModel?.version || 'N/A'}</div>
+                <div className="text-2xl font-bold">{activeModel?.version || 'Gemini 2.5 Flash'}</div>
                 <p className="text-xs text-muted-foreground">
-                  Auto-activated at {activeModel?.created_at ? new Date(activeModel.created_at).toLocaleDateString() : 'N/A'}
+                  Last used {activeModel?.created_at ? new Date(activeModel.created_at).toLocaleString() : 'recently'}
                 </p>
               </CardContent>
             </Card>

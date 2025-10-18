@@ -180,6 +180,7 @@ export type Database = {
       }
       fairness_evaluations: {
         Row: {
+          ai_model_name: string | null
           calibration_error: number
           community_metrics: Json
           created_at: string
@@ -187,12 +188,14 @@ export type Database = {
           demographic_parity_diff: number
           equalized_odds_ratio: number
           evaluation_date: string
+          evaluation_type: string | null
           f1_variance: number
           id: string
           model_version: string
           passed_thresholds: boolean
         }
         Insert: {
+          ai_model_name?: string | null
           calibration_error: number
           community_metrics?: Json
           created_at?: string
@@ -200,12 +203,14 @@ export type Database = {
           demographic_parity_diff: number
           equalized_odds_ratio: number
           evaluation_date?: string
+          evaluation_type?: string | null
           f1_variance: number
           id?: string
           model_version: string
           passed_thresholds: boolean
         }
         Update: {
+          ai_model_name?: string | null
           calibration_error?: number
           community_metrics?: Json
           created_at?: string
@@ -213,6 +218,7 @@ export type Database = {
           demographic_parity_diff?: number
           equalized_odds_ratio?: number
           evaluation_date?: string
+          evaluation_type?: string | null
           f1_variance?: number
           id?: string
           model_version?: string
@@ -338,6 +344,7 @@ export type Database = {
       }
       predictions: {
         Row: {
+          ai_model_used: string | null
           community_area: string
           confidence: number
           contributing_factors: Json
@@ -353,6 +360,7 @@ export type Database = {
           status: Database["public"]["Enums"]["prediction_status"] | null
         }
         Insert: {
+          ai_model_used?: string | null
           community_area: string
           confidence: number
           contributing_factors?: Json
@@ -368,6 +376,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["prediction_status"] | null
         }
         Update: {
+          ai_model_used?: string | null
           community_area?: string
           confidence?: number
           contributing_factors?: Json
@@ -466,6 +475,10 @@ export type Database = {
       get_best_ai_model: {
         Args: { p_community_area?: string; p_crime_type: string }
         Returns: string
+      }
+      get_best_ai_model_with_stats: {
+        Args: { p_community_area?: string; p_crime_type: string }
+        Returns: Json
       }
       has_role: {
         Args: {

@@ -135,42 +135,55 @@ serve(async (req) => {
         );
       }
       
-      // Get the best AI model for this crime type and area
-      const { data: bestModel, error: modelError } = await supabase
-        .rpc('get_best_ai_model', {
+      // Get the best AI model with stats
+      const { data: modelStats, error: modelError } = await supabase
+        .rpc('get_best_ai_model_with_stats', {
           p_crime_type: features.primary_type,
           p_community_area: features.community_area?.toString()
         });
       
-      const selectedModel = bestModel || 'google/gemini-2.5-flash';
+      const selectedModel = modelStats?.model_name || 'google/gemini-2.5-flash';
       const startTime = Date.now();
-      console.log(`Using AI model: ${selectedModel} for ${features.primary_type}`);
+      console.log(`Using AI model: ${selectedModel} for ${features.primary_type}`, modelStats);
       
-      // Generate prediction using Lovable AI with selected model
-      const prompt = `You are an expert crime analyst. Analyze this crime incident and predict the arrest probability.
+      // Enhanced prompt with better structure
+      const typeStats = crimeStats[features.primary_type] || { total: 0, arrests: 0 };
+      const areaStatsData = areaStats[features.community_area] || { total: 0, arrests: 0 };
+      
+      const prompt = `You are a Chicago Police Department crime analyst AI. Analyze this incident and predict arrest likelihood.
 
-Crime Features:
-- Type: ${features.primary_type}
+**Incident Details:**
+- Crime Type: ${features.primary_type}
 - Community Area: ${features.community_area}
 - Time: ${features.hour}:00 on ${features.day_of_week}
-- Location: (${features.latitude}, ${features.longitude})
 - Month: ${features.month}
+- Location: (${features.latitude}, ${features.longitude})
 
-Historical Context:
-- ${features.primary_type} crimes: ${crimeStats[features.primary_type]?.total || 0} incidents, ${((crimeStats[features.primary_type]?.arrests || 0) / (crimeStats[features.primary_type]?.total || 1) * 100).toFixed(1)}% arrest rate
-- Area ${features.community_area}: ${areaStats[features.community_area]?.total || 0} incidents, ${((areaStats[features.community_area]?.arrests || 0) / (areaStats[features.community_area]?.total || 1) * 100).toFixed(1)}% arrest rate
+**Historical Patterns:**
+- ${features.primary_type} baseline: ${typeStats.total} incidents, ${typeStats.total > 0 ? ((typeStats.arrests / typeStats.total) * 100).toFixed(1) : 0}% arrest rate
+- Area ${features.community_area} baseline: ${areaStatsData.total} incidents, ${areaStatsData.total > 0 ? ((areaStatsData.arrests / areaStatsData.total) * 100).toFixed(1) : 0}% arrest rate
 
-Return ONLY a JSON object with this structure:
+**Contextual Factors to Consider:**
+- Time of day impact (${features.hour}:00)
+- Day of week patterns (${features.day_of_week})
+- Seasonal trends (Month ${features.month})
+- Geographic factors and policing presence
+
+**Response Format (JSON ONLY):**
 {
   "arrest_probability": <float 0-1>,
   "risk_score": <float 0-1>,
-  "confidence": <float 0-1>,
-  "risk_level": "low" | "medium" | "high",
+  "confidence": <float 0-1 based on data sufficiency>,
+  "risk_level": "low|medium|high",
   "contributing_factors": [
-    {"feature": "string", "contribution": <float -1 to 1>, "importance": <float 0-1>}
+    {"feature": "time_of_day", "contribution": <-1 to 1>, "importance": <0-1>},
+    {"feature": "crime_type", "contribution": <-1 to 1>, "importance": <0-1>},
+    {"feature": "area_pattern", "contribution": <-1 to 1>, "importance": <0-1>}
   ],
-  "explanation": "brief explanation"
-}`;
+  "explanation": "2-3 sentence reasoning"
+}
+
+Respond with ONLY valid JSON, no markdown.`;
 
       let prediction: any = null;
       let modelUsed = selectedModel;
@@ -247,7 +260,7 @@ Return ONLY a JSON object with this structure:
           (err) => console.error('Failed to track performance:', err)
         );
 
-      // Store prediction in database
+      // Store prediction with AI model tracking
       const { data: savedPrediction, error: saveError } = await supabase
         .from('predictions')
         .insert({
@@ -259,7 +272,8 @@ Return ONLY a JSON object with this structure:
           confidence: prediction.confidence,
           risk_level: prediction.risk_level,
           contributing_factors: prediction.contributing_factors || [],
-          model_version: 'lovable-ai-v1',
+          model_version: 'lovable-ai-v1', // Legacy field
+          ai_model_used: modelUsed, // New tracking field
           status: 'completed',
         })
         .select()
