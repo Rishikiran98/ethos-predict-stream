@@ -1,0 +1,26 @@
+# FastAPI and server
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+python-multipart==0.0.6
+pydantic==2.5.3
+
+# ML and Data Processing
+scikit-learn==1.4.0
+xgboost==2.0.3
+lightgbm==4.2.0
+pandas==2.2.0
+numpy==1.26.3
+dask[complete]==2024.1.0
+distributed==2024.1.0
+
+# Fairness and Explainability
+fairlearn==0.10.0
+shap==0.44.0
+
+# Utilities
+python-dotenv==1.0.1
+
+# Testing (optional)
+pytest==8.0.0
+pytest-asyncio==0.23.4
+httpx==0.26.0
