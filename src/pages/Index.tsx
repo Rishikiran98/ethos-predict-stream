@@ -25,7 +25,6 @@ const Index = () => {
             <TabsTrigger value="geography">Live Map</TabsTrigger>
             <TabsTrigger value="fairness">Fairness</TabsTrigger>
             {userRole && <TabsTrigger value="feedback">Report Crime</TabsTrigger>}
-            {userRole === 'admin' && <TabsTrigger value="overview">Overview</TabsTrigger>}
             {userRole === 'admin' && <TabsTrigger value="performance">Performance</TabsTrigger>}
             {userRole === 'admin' && <TabsTrigger value="explain">Explainability</TabsTrigger>}
             {userRole === 'admin' && <TabsTrigger value="audit">Audit</TabsTrigger>}
@@ -43,12 +42,6 @@ const Index = () => {
           {userRole && (
             <TabsContent value="feedback" className="mt-6">
               <CommunityFeedback />
-            </TabsContent>
-          )}
-
-          {userRole === 'admin' && (
-            <TabsContent value="overview" className="mt-6 space-y-6">
-              <MetricsOverview onNavigate={setActiveTab} />
             </TabsContent>
           )}
 
