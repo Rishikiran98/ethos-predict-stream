@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_model_performance: {
+        Row: {
+          avg_confidence: number | null
+          avg_response_time_ms: number | null
+          community_area: string | null
+          created_at: string | null
+          crime_type: string
+          failure_count: number | null
+          id: string
+          last_used_at: string | null
+          model_name: string
+          success_count: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          avg_confidence?: number | null
+          avg_response_time_ms?: number | null
+          community_area?: string | null
+          created_at?: string | null
+          crime_type: string
+          failure_count?: number | null
+          id?: string
+          last_used_at?: string | null
+          model_name: string
+          success_count?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          avg_confidence?: number | null
+          avg_response_time_ms?: number | null
+          community_area?: string | null
+          created_at?: string | null
+          crime_type?: string
+          failure_count?: number | null
+          id?: string
+          last_used_at?: string | null
+          model_name?: string
+          success_count?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           created_at: string
@@ -421,6 +463,10 @@ export type Database = {
       }
     }
     Functions: {
+      get_best_ai_model: {
+        Args: { p_community_area?: string; p_crime_type: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
