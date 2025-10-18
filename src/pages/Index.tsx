@@ -25,9 +25,9 @@ const Index = () => {
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="fairness">Fairness</TabsTrigger>
             <TabsTrigger value="geography">Geography</TabsTrigger>
-            <TabsTrigger value="performance">Performance</TabsTrigger>
-            <TabsTrigger value="explain">Explainability</TabsTrigger>
-            <TabsTrigger value="audit">Audit</TabsTrigger>
+            {userRole === 'admin' && <TabsTrigger value="performance">Performance</TabsTrigger>}
+            {userRole === 'admin' && <TabsTrigger value="explain">Explainability</TabsTrigger>}
+            {userRole === 'admin' && <TabsTrigger value="audit">Audit</TabsTrigger>}
             {userRole && <TabsTrigger value="feedback">Feedback</TabsTrigger>}
             {userRole === 'admin' && <TabsTrigger value="admin">Admin</TabsTrigger>}
           </TabsList>
@@ -37,24 +37,30 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="fairness" className="mt-6">
-            <FairnessPanel />
+            <FairnessPanel onNavigate={setActiveTab} />
           </TabsContent>
 
           <TabsContent value="geography" className="mt-6">
             <GeographicView />
           </TabsContent>
 
-          <TabsContent value="performance" className="mt-6">
-            <ModelPerformance />
-          </TabsContent>
+          {userRole === 'admin' && (
+            <TabsContent value="performance" className="mt-6">
+              <ModelPerformance />
+            </TabsContent>
+          )}
 
-          <TabsContent value="explain" className="mt-6">
-            <ExplainabilityView />
-          </TabsContent>
+          {userRole === 'admin' && (
+            <TabsContent value="explain" className="mt-6">
+              <ExplainabilityView />
+            </TabsContent>
+          )}
 
-          <TabsContent value="audit" className="mt-6">
-            <AuditLog />
-          </TabsContent>
+          {userRole === 'admin' && (
+            <TabsContent value="audit" className="mt-6">
+              <AuditLog />
+            </TabsContent>
+          )}
 
           {userRole && (
             <TabsContent value="feedback" className="mt-6">

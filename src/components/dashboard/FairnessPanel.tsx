@@ -12,6 +12,10 @@ interface FairnessMetric {
   description: string;
 }
 
+interface FairnessPanelProps {
+  onNavigate: (tab: string) => void;
+}
+
 const fairnessMetrics: FairnessMetric[] = [
   {
     name: "Demographic Parity Difference",
@@ -52,7 +56,7 @@ const communityMetrics = [
   { area: "Loop", f1: 0.74, population: 42298, crime_rate: 7.8 }
 ];
 
-export const FairnessPanel = () => {
+export const FairnessPanel = ({ onNavigate }: FairnessPanelProps) => {
   return (
     <div className="space-y-6">
       {/* Fairness Status Banner */}
@@ -66,13 +70,17 @@ export const FairnessPanel = () => {
       {/* Fairness Metrics Grid */}
       <div className="grid gap-4 md:grid-cols-2">
         {fairnessMetrics.map((metric) => (
-          <Card key={metric.name}>
+          <Card 
+            key={metric.name}
+            className="cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02]"
+            onClick={() => onNavigate("geography")}
+          >
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div>
                   <CardTitle className="text-base">{metric.name}</CardTitle>
                   <CardDescription className="text-xs mt-1">
-                    {metric.description}
+                    {metric.description} • Click for geographic view
                   </CardDescription>
                 </div>
                 {metric.passed ? (
@@ -108,11 +116,14 @@ export const FairnessPanel = () => {
       </div>
 
       {/* Community Performance Table */}
-      <Card>
+      <Card 
+        className="cursor-pointer transition-all hover:shadow-lg hover:scale-[1.01]"
+        onClick={() => onNavigate("geography")}
+      >
         <CardHeader>
           <CardTitle>Performance by Community Area</CardTitle>
           <CardDescription>
-            Model F1 scores across Chicago neighborhoods (variance: 0.065)
+            Model F1 scores across Chicago neighborhoods (variance: 0.065) • Click to view map
           </CardDescription>
         </CardHeader>
         <CardContent>

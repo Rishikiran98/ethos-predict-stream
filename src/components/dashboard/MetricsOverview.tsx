@@ -60,7 +60,8 @@ export const MetricsOverview = ({ onNavigate }: MetricsOverviewProps) => {
           change={-27.7}
           trend="down"
           icon={<Target className="h-4 w-4 text-primary" />}
-          description="After data leakage prevention"
+          description="After data leakage prevention • Click for map"
+          onClick={() => onNavigate("geography")}
         />
         <MetricCard
           title="Processing Speed"
@@ -68,7 +69,8 @@ export const MetricsOverview = ({ onNavigate }: MetricsOverviewProps) => {
           change={740}
           trend="up"
           icon={<Zap className="h-4 w-4 text-warning" />}
-          description="Distributed computing gain"
+          description="Distributed computing gain • Click for map"
+          onClick={() => onNavigate("geography")}
         />
         <MetricCard
           title="Fairness Score"
@@ -76,8 +78,8 @@ export const MetricsOverview = ({ onNavigate }: MetricsOverviewProps) => {
           change={15.2}
           trend="up"
           icon={<Scale className="h-4 w-4 text-success" />}
-          description="F1 variance ≤0.07"
-          onClick={() => onNavigate("fairness")}
+          description="F1 variance ≤0.07 • Click for map"
+          onClick={() => onNavigate("geography")}
         />
         <MetricCard
           title="Memory Efficiency"
@@ -85,7 +87,8 @@ export const MetricsOverview = ({ onNavigate }: MetricsOverviewProps) => {
           change={72}
           trend="up"
           icon={<Activity className="h-4 w-4 text-secondary" />}
-          description="Reduction vs baseline"
+          description="Reduction vs baseline • Click for map"
+          onClick={() => onNavigate("geography")}
         />
       </div>
 
@@ -123,26 +126,32 @@ export const MetricsOverview = ({ onNavigate }: MetricsOverviewProps) => {
 
       {/* Data Quality Metrics */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
+        <Card 
+          className="cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02]"
+          onClick={() => onNavigate("geography")}
+        >
           <CardHeader>
             <CardTitle className="text-base">Records Processed</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">6,247,891</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Chicago crime data (2001-2024)
+              Chicago crime data (2001-2024) • Click for map
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card 
+          className="cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02]"
+          onClick={() => onNavigate("geography")}
+        >
           <CardHeader>
             <CardTitle className="text-base">Temporal Validation</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-success">✓ Passed</div>
             <p className="text-xs text-muted-foreground mt-1">
-              No future data leakage detected
+              No future data leakage detected • Click for map
             </p>
           </CardContent>
         </Card>
