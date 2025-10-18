@@ -29,6 +29,25 @@ export const CommunityFeedback = () => {
   const [description, setDescription] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Show login prompt if not authenticated
+  if (!user) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="text-center space-y-4">
+            <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground" />
+            <div>
+              <h3 className="font-semibold text-lg">Authentication Required</h3>
+              <p className="text-sm text-muted-foreground mt-2">
+                Please sign in to submit community feedback and view feedback history.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   // Fetch existing feedback
   const { data: feedbackList } = useQuery({
     queryKey: ['community-feedback'],

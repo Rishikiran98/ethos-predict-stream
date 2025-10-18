@@ -1,7 +1,8 @@
-import { Shield, AlertTriangle, Clock, LogOut, User } from "lucide-react";
+import { Shield, AlertTriangle, Clock, LogOut, User, LogIn } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +14,7 @@ import {
 
 export const DashboardHeader = () => {
   const { user, userRole, signOut } = useAuth();
+  const navigate = useNavigate();
 
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
@@ -48,36 +50,43 @@ export const DashboardHeader = () => {
               <div className="h-2 w-2 rounded-full bg-success animate-pulse" />
               System Active
             </Badge>
-            <Badge variant="secondary" className="gap-2">
+            <Badge variant="secondary" className="gap-2 hidden sm:flex">
               <Clock className="h-3 w-3" />
               Last Updated: 2m ago
             </Badge>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="gap-2">
-                  <User className="h-4 w-4" />
-                  <span className="hidden sm:inline">{user?.email}</span>
-                  {userRole && (
-                    <Badge variant={getRoleBadgeVariant(userRole)} className="ml-1">
-                      {userRole}
-                    </Badge>
-                  )}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem disabled>
-                  Role: {userRole || 'loading...'}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={signOut} className="text-destructive">
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Sign Out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="gap-2">
+                    <User className="h-4 w-4" />
+                    <span className="hidden sm:inline">{user.email}</span>
+                    {userRole && (
+                      <Badge variant={getRoleBadgeVariant(userRole)} className="ml-1">
+                        {userRole}
+                      </Badge>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem disabled>
+                    Role: {userRole || 'loading...'}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={signOut} className="text-destructive">
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button onClick={() => navigate('/auth')} size="sm" className="gap-2">
+                <LogIn className="h-4 w-4" />
+                <span className="hidden sm:inline">Sign In</span>
+              </Button>
+            )}
           </div>
         </div>
 

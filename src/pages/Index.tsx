@@ -21,14 +21,14 @@ const Index = () => {
       
       <main className="container mx-auto px-4 py-6 space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-8 lg:w-auto">
+          <TabsList className="grid w-full grid-cols-6 lg:grid-cols-8 lg:w-auto">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="fairness">Fairness</TabsTrigger>
             <TabsTrigger value="geography">Geography</TabsTrigger>
             <TabsTrigger value="performance">Performance</TabsTrigger>
             <TabsTrigger value="explain">Explainability</TabsTrigger>
-            <TabsTrigger value="feedback">Feedback</TabsTrigger>
             <TabsTrigger value="audit">Audit</TabsTrigger>
+            {userRole && <TabsTrigger value="feedback">Feedback</TabsTrigger>}
             {userRole === 'admin' && <TabsTrigger value="admin">Admin</TabsTrigger>}
           </TabsList>
 
@@ -52,13 +52,15 @@ const Index = () => {
             <ExplainabilityView />
           </TabsContent>
 
-          <TabsContent value="feedback" className="mt-6">
-            <CommunityFeedback />
-          </TabsContent>
-
           <TabsContent value="audit" className="mt-6">
             <AuditLog />
           </TabsContent>
+
+          {userRole && (
+            <TabsContent value="feedback" className="mt-6">
+              <CommunityFeedback />
+            </TabsContent>
+          )}
 
           {userRole === 'admin' && (
             <TabsContent value="admin" className="mt-6">
