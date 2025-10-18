@@ -1,6 +1,6 @@
 """
 Database Configuration and Session Management
-SQLAlchemy ORM with async support for Supabase PostgreSQL
+SQLAlchemy ORM with auto-configuration for Lovable Cloud / Supabase
 """
 
 import os
@@ -12,8 +12,35 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Database URL from environment
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/ethical_ai")
+# Auto-detect Lovable Cloud database URL
+# Priority: DATABASE_URL > Supabase env vars > local default
+def get_database_url():
+    """Auto-detect database URL from various sources"""
+    
+    # Option 1: Explicit DATABASE_URL
+    if os.getenv("DATABASE_URL"):
+        return os.getenv("DATABASE_URL")
+    
+    # Option 2: Lovable Cloud / Supabase environment variables
+    supabase_url = os.getenv("VITE_SUPABASE_URL")
+    if supabase_url:
+        # Extract host from Supabase URL (e.g., https://xxx.supabase.co -> xxx.supabase.co)
+        host = supabase_url.replace("https://", "").replace("http://", "")
+        project_id = host.split(".")[0]
+        
+        # Construct PostgreSQL connection string
+        # Password should be in SUPABASE_DB_PASSWORD or extracted from service role
+        password = os.getenv("SUPABASE_DB_PASSWORD", os.getenv("SUPABASE_SERVICE_ROLE_KEY", "postgres"))
+        
+        db_url = f"postgresql://postgres:{password}@db.{project_id}.supabase.co:5432/postgres"
+        logger.info(f"Auto-detected Lovable Cloud database: {project_id}")
+        return db_url
+    
+    # Option 3: Local development default
+    logger.info("Using local development database")
+    return "postgresql://postgres:postgres@localhost:5432/ethical_ai"
+
+DATABASE_URL = get_database_url()
 
 # Create SQLAlchemy engine
 engine = create_engine(

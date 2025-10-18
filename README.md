@@ -4,9 +4,50 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![React 18](https://img.shields.io/badge/react-18+-61dafb.svg)](https://reactjs.org/)
 
-> Production-grade predictive policing system with built-in fairness, transparency, and community oversight. Analyzing **6.2M+ Chicago crime records** (2001-present).
+> Production-grade predictive policing system with built-in fairness, transparency, and community oversight. **Zero configuration required** - runs out of the box! Analyzing **6.2M+ Chicago crime records** (2001-present).
 
 ![Dashboard Preview](https://via.placeholder.com/1200x600/1a56db/ffffff?text=Ethical+AI+Policing+Dashboard)
+
+## 🚀 Zero-Configuration Quick Start
+
+**Get running in under 2 minutes with ZERO manual setup:**
+
+### Step 1: Start Backend (Automated)
+
+**Linux/Mac:**
+```bash
+cd backend
+chmod +x start.sh
+./start.sh
+```
+
+**Windows:**
+```cmd
+cd backend
+setup.bat
+```
+
+✅ **Everything is automated:**
+- Dependencies installed automatically
+- Database auto-detected (Lovable Cloud or local)
+- ML model trained or loaded
+- Redis cache configured (optional)
+- All environment variables set
+
+### Step 2: Connect Frontend (30 seconds)
+
+```typescript
+// In src/lib/api.ts, change line 5:
+const USE_MOCK_DATA = false;  // ← Change to false
+```
+
+### Step 3: Done! 🎉
+
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://localhost:8000/docs
+- **Health Check**: http://localhost:8000/health
+
+📖 **Detailed Setup Guide**: See [SETUP.md](SETUP.md) for advanced options
 
 ## 🎯 Project Overview
 
@@ -75,33 +116,37 @@ npm install
 npm run dev
 ```
 
-### Backend Setup (Separate Deployment)
+### Backend Setup (Fully Automated)
 
-The backend must be deployed separately. See [DEPLOYMENT.md](./DEPLOYMENT.md) for full instructions.
-
-**Quick Docker deployment**:
+**Zero configuration required!** Everything is automated:
 
 ```bash
-# Clone backend repo (create this separately)
-git clone https://github.com/your-org/ethical-ai-policing-backend.git
-cd ethical-ai-policing-backend
-
-# Configure environment
-cp .env.example .env
-# Edit .env with your database URL, API keys, etc.
-
-# Launch with Docker Compose
-docker-compose up -d
-
-# Backend will be available at http://localhost:8000
+cd backend
+./start.sh  # Linux/Mac
+# OR
+setup.bat   # Windows
 ```
+
+The script automatically:
+- ✅ Creates virtual environment
+- ✅ Installs all dependencies
+- ✅ Auto-detects Lovable Cloud database
+- ✅ Initializes database schema
+- ✅ Trains or loads ML model
+- ✅ Starts API server on port 8000
 
 **Connect Frontend to Backend**:
 
-In Lovable project settings or `.env`:
-```bash
-VITE_API_BASE_URL=https://your-backend-api.com/api/v1
+```typescript
+// In src/lib/api.ts:
+const USE_MOCK_DATA = false;
 ```
+
+**Advanced Setup Options**: See [SETUP.md](SETUP.md) for:
+- Custom database configuration
+- Docker deployment
+- Production environment
+- Monitoring setup
 
 ## 📊 Dashboard Features
 

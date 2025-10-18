@@ -11,16 +11,21 @@ from functools import wraps
 
 logger = logging.getLogger(__name__)
 
-# Redis connection
+# Redis connection with auto-fallback
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
-try:
-    redis_client = redis.from_url(REDIS_URL, decode_responses=True)
-    redis_client.ping()
-    logger.info("Redis connected successfully")
-except Exception as e:
-    logger.warning(f"Redis connection failed: {e}. Caching disabled.")
-    redis_client = None
+def connect_redis():
+    """Try to connect to Redis, gracefully fallback if unavailable"""
+    try:
+        client = redis.from_url(REDIS_URL, decode_responses=True, socket_connect_timeout=2)
+        client.ping()
+        logger.info("✅ Redis cache connected")
+        return client
+    except Exception as e:
+        logger.info(f"ℹ️  Redis unavailable - caching disabled (this is OK for development)")
+        return None
+
+redis_client = connect_redis()
 
 def cache_response(ttl: int = 300):
     """
