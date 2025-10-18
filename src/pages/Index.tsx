@@ -13,7 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
   const { userRole } = useAuth();
-  const [activeTab, setActiveTab] = useState(userRole === 'admin' ? "overview" : "fairness");
+  const [activeTab, setActiveTab] = useState("geography");
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
@@ -22,47 +22,23 @@ const Index = () => {
       <main className="container mx-auto px-4 py-6 space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-6 lg:grid-cols-8 lg:w-auto">
-            {userRole === 'admin' && <TabsTrigger value="overview">Overview</TabsTrigger>}
+            <TabsTrigger value="geography">Live Map</TabsTrigger>
             <TabsTrigger value="fairness">Fairness</TabsTrigger>
-            <TabsTrigger value="geography">Geography</TabsTrigger>
+            {userRole && <TabsTrigger value="feedback">Report Crime</TabsTrigger>}
+            {userRole === 'admin' && <TabsTrigger value="overview">Overview</TabsTrigger>}
             {userRole === 'admin' && <TabsTrigger value="performance">Performance</TabsTrigger>}
             {userRole === 'admin' && <TabsTrigger value="explain">Explainability</TabsTrigger>}
             {userRole === 'admin' && <TabsTrigger value="audit">Audit</TabsTrigger>}
-            {userRole && <TabsTrigger value="feedback">Feedback</TabsTrigger>}
             {userRole === 'admin' && <TabsTrigger value="admin">Admin</TabsTrigger>}
           </TabsList>
-
-          {userRole === 'admin' && (
-            <TabsContent value="overview" className="mt-6 space-y-6">
-              <MetricsOverview onNavigate={setActiveTab} />
-            </TabsContent>
-          )}
-
-          <TabsContent value="fairness" className="mt-6">
-            <FairnessPanel onNavigate={setActiveTab} />
-          </TabsContent>
 
           <TabsContent value="geography" className="mt-6">
             <GeographicView />
           </TabsContent>
 
-          {userRole === 'admin' && (
-            <TabsContent value="performance" className="mt-6">
-              <ModelPerformance />
-            </TabsContent>
-          )}
-
-          {userRole === 'admin' && (
-            <TabsContent value="explain" className="mt-6">
-              <ExplainabilityView />
-            </TabsContent>
-          )}
-
-          {userRole === 'admin' && (
-            <TabsContent value="audit" className="mt-6">
-              <AuditLog />
-            </TabsContent>
-          )}
+          <TabsContent value="fairness" className="mt-6">
+            <FairnessPanel onNavigate={setActiveTab} />
+          </TabsContent>
 
           {userRole && (
             <TabsContent value="feedback" className="mt-6">
@@ -71,9 +47,29 @@ const Index = () => {
           )}
 
           {userRole === 'admin' && (
-            <TabsContent value="admin" className="mt-6">
-              <AdminPanel />
+            <TabsContent value="overview" className="mt-6 space-y-6">
+              <MetricsOverview onNavigate={setActiveTab} />
             </TabsContent>
+          )}
+
+          {userRole === 'admin' && (
+            <>
+              <TabsContent value="performance" className="mt-6">
+                <ModelPerformance />
+              </TabsContent>
+
+              <TabsContent value="explain" className="mt-6">
+                <ExplainabilityView />
+              </TabsContent>
+
+              <TabsContent value="audit" className="mt-6">
+                <AuditLog />
+              </TabsContent>
+
+              <TabsContent value="admin" className="mt-6">
+                <AdminPanel />
+              </TabsContent>
+            </>
           )}
         </Tabs>
       </main>
