@@ -26,9 +26,9 @@ serve(async (req) => {
     const sodaAppToken = Deno.env.get("SODA_APP_TOKEN") || "";
     const chicagoApiUrl = new URL("https://data.cityofchicago.org/resource/ijzp-q8t2.json");
     
-    // Add query parameters for efficient data fetching (reduced limit to avoid CPU timeout)
+    // Add query parameters for efficient data fetching (optimized to avoid CPU timeout)
     chicagoApiUrl.searchParams.append("$select", "case_number,date,primary_type,community_area,arrest,latitude,longitude");
-    chicagoApiUrl.searchParams.append("$limit", "500"); // Further reduced to avoid CPU limits
+    chicagoApiUrl.searchParams.append("$limit", "250"); // Reduced to 250 to stay well under CPU limits
     chicagoApiUrl.searchParams.append("$order", "date DESC");
     
     const headers: Record<string, string> = {
@@ -63,8 +63,8 @@ serve(async (req) => {
     let errors = 0;
     const errorDetails: string[] = [];
 
-    // Process records in batches to avoid CPU timeout
-    const batchSize = 100; // Increased batch size to reduce number of DB calls
+    // Process records in smaller batches to avoid CPU timeout
+    const batchSize = 25; // Reduced to 25 records per batch for better CPU management
     for (let i = 0; i < crimeData.length; i += batchSize) {
       const batch = crimeData.slice(i, i + batchSize);
       
@@ -97,6 +97,9 @@ serve(async (req) => {
         } else {
           newRows += data?.length || 0;
         }
+        
+        // Add small delay between batches to prevent CPU spike
+        await new Promise(resolve => setTimeout(resolve, 50));
       } catch (err) {
         errors += recordsToInsert.length;
         const errorMsg = err instanceof Error ? err.message : String(err);
