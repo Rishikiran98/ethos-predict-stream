@@ -28,7 +28,7 @@ serve(async (req) => {
     
     // Add query parameters for efficient data fetching (reduced limit to avoid CPU timeout)
     chicagoApiUrl.searchParams.append("$select", "case_number,date,primary_type,community_area,arrest,latitude,longitude");
-    chicagoApiUrl.searchParams.append("$limit", "1000");
+    chicagoApiUrl.searchParams.append("$limit", "500"); // Further reduced to avoid CPU limits
     chicagoApiUrl.searchParams.append("$order", "date DESC");
     
     const headers: Record<string, string> = {
@@ -64,7 +64,7 @@ serve(async (req) => {
     const errorDetails: string[] = [];
 
     // Process records in batches to avoid CPU timeout
-    const batchSize = 50;
+    const batchSize = 100; // Increased batch size to reduce number of DB calls
     for (let i = 0; i < crimeData.length; i += batchSize) {
       const batch = crimeData.slice(i, i + batchSize);
       
