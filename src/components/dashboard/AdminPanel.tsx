@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Progress } from '@/components/ui/progress';
+import { LiveMetricsPanel } from './LiveMetricsPanel';
 
 interface MetricCardProps {
   title: string;
@@ -215,6 +216,12 @@ export const AdminPanel = () => {
 
   return (
     <div className="space-y-6">
+      {/* Live Metrics Section */}
+      <div>
+        <h2 className="text-2xl font-bold mb-4">Real-Time Analytics</h2>
+        <LiveMetricsPanel />
+      </div>
+
       {/* System Overview Section */}
       <div>
         <h2 className="text-2xl font-bold mb-4">System Overview</h2>

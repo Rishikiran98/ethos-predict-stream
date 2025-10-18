@@ -363,3 +363,36 @@ export async function getSystemHealth(): Promise<{
 }> {
   return fetchAPI('/health');
 }
+
+// NEW: Live performance metrics from Edge Functions
+export async function fetchPerformanceHistory() {
+  const baseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const response = await fetch(`${baseUrl}/functions/v1/performance-metrics/history`);
+  if (!response.ok) throw new Error('Failed to fetch performance history');
+  return response.json();
+}
+
+export async function fetchCurrentPerformance() {
+  const baseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const response = await fetch(`${baseUrl}/functions/v1/performance-metrics/current`);
+  if (!response.ok) throw new Error('Failed to fetch current performance');
+  return response.json();
+}
+
+export async function fetchIngestionStatus() {
+  const baseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const response = await fetch(`${baseUrl}/functions/v1/performance-metrics/ingestion-status`);
+  if (!response.ok) throw new Error('Failed to fetch ingestion status');
+  return response.json();
+}
+
+export async function triggerDataIngestion() {
+  const baseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const response = await fetch(`${baseUrl}/functions/v1/ingest-crime-data`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ manual_trigger: true }),
+  });
+  if (!response.ok) throw new Error('Failed to trigger ingestion');
+  return response.json();
+}
