@@ -1,13 +1,4 @@
 project_id = "feltwsxfnsvtnjqgmvie"
 
-[functions.ingest-crime-data]
-verify_jwt = false
-
-[functions.performance-metrics]
-verify_jwt = false
-
-[functions.ml-predict]
-verify_jwt = false
-
-[functions.ml-analytics]
-verify_jwt = false
+# All Edge Functions require JWT authentication by default
+# verify_jwt is enabled by default and does not need to be explicitly set
