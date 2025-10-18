@@ -1,10 +1,49 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Input validation schemas
+const PredictFeaturesSchema = z.object({
+  primary_type: z.string().min(1).max(100),
+  community_area: z.number().int().min(1).max(77),
+  hour: z.number().int().min(0).max(23),
+  day_of_week: z.string().min(1).max(20),
+  month: z.number().int().min(1).max(12),
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+});
+
+const RequestSchema = z.object({
+  action: z.enum(['predict', 'batch_predict']),
+  features: PredictFeaturesSchema.optional(),
+});
+
+// Simple in-memory rate limiter
+const rateLimiter = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT = 30; // requests per minute
+const RATE_WINDOW = 60000; // 1 minute
+
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const userLimit = rateLimiter.get(userId);
+  
+  if (!userLimit || now > userLimit.resetAt) {
+    rateLimiter.set(userId, { count: 1, resetAt: now + RATE_WINDOW });
+    return true;
+  }
+  
+  if (userLimit.count >= RATE_LIMIT) {
+    return false;
+  }
+  
+  userLimit.count++;
+  return true;
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -22,16 +61,41 @@ serve(async (req) => {
     
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     if (authError || !user) {
-      console.error('Authentication failed:', authError);
       return new Response(
-        JSON.stringify({ error: 'Unauthorized - valid authentication required' }),
+        JSON.stringify({ error: 'Authentication required' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Rate limiting
+    if (!checkRateLimit(user.id)) {
+      return new Response(
+        JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')!;
 
-    const { action, features } = await req.json();
+    // Parse and validate input
+    const rawBody = await req.json();
+    const validationResult = RequestSchema.safeParse(rawBody);
+    
+    if (!validationResult.success) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid request parameters' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { action, features } = validationResult.data;
+
+    if (action === 'predict' && !features) {
+      return new Response(
+        JSON.stringify({ error: 'Features required for predict action' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Fetch recent crime data for context
     const { data: recentCrimes, error: crimeError } = await supabase
@@ -64,6 +128,13 @@ serve(async (req) => {
     });
 
     if (action === 'predict') {
+      if (!features) {
+        return new Response(
+          JSON.stringify({ error: 'Features required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       // Generate prediction using Lovable AI
       const prompt = `You are an expert crime analyst. Analyze this crime incident and predict the arrest probability.
 
@@ -104,9 +175,8 @@ Return ONLY a JSON object with this structure:
       });
 
       if (!aiResponse.ok) {
-        const errorText = await aiResponse.text();
-        console.error('AI API error:', aiResponse.status, errorText);
-        throw new Error(`AI API error: ${aiResponse.status}`);
+        console.error('AI API error:', aiResponse.status);
+        throw new Error('AI service unavailable');
       }
 
       const aiData = await aiResponse.json();
@@ -118,8 +188,8 @@ Return ONLY a JSON object with this structure:
         const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
         prediction = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(rawContent);
       } catch (e) {
-        console.error('Failed to parse AI response:', rawContent);
-        throw new Error('Invalid AI response format');
+        console.error('Failed to parse AI response');
+        throw new Error('Invalid prediction format');
       }
 
       // Store prediction in database
@@ -201,12 +271,15 @@ Return ONLY a JSON object with this structure:
       );
     }
 
-    throw new Error('Invalid action');
+    return new Response(
+      JSON.stringify({ error: 'Invalid action' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
 
   } catch (error) {
     console.error('Error in ml-predict:', error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
+      JSON.stringify({ error: 'An error occurred while processing your request' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

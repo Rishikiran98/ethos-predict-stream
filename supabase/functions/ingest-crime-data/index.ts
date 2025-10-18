@@ -1,10 +1,38 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// Input validation
+const RequestSchema = z.object({
+  manual_trigger: z.boolean().optional(),
+});
+
+// Simple in-memory rate limiter (stricter for admin operations)
+const rateLimiter = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT = 5; // requests per minute (strict for data ingestion)
+const RATE_WINDOW = 60000; // 1 minute
+
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const userLimit = rateLimiter.get(userId);
+  
+  if (!userLimit || now > userLimit.resetAt) {
+    rateLimiter.set(userId, { count: 1, resetAt: now + RATE_WINDOW });
+    return true;
+  }
+  
+  if (userLimit.count >= RATE_LIMIT) {
+    return false;
+  }
+  
+  userLimit.count++;
+  return true;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -23,9 +51,8 @@ serve(async (req) => {
     
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     if (authError || !user) {
-      console.error('Authentication failed:', authError);
       return new Response(
-        JSON.stringify({ error: 'Unauthorized - valid authentication required' }),
+        JSON.stringify({ error: 'Authentication required' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -35,10 +62,28 @@ serve(async (req) => {
       .rpc('has_role', { _user_id: user.id, _role: 'admin' });
 
     if (roleError || !hasAdminRole) {
-      console.error('Admin authorization failed:', roleError);
       return new Response(
-        JSON.stringify({ error: 'Forbidden - admin role required' }),
+        JSON.stringify({ error: 'Admin privileges required' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Rate limiting
+    if (!checkRateLimit(user.id)) {
+      return new Response(
+        JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate input
+    const rawBody = await req.json();
+    const validationResult = RequestSchema.safeParse(rawBody);
+    
+    if (!validationResult.success) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid request parameters' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -67,7 +112,7 @@ serve(async (req) => {
     const response = await fetch(chicagoApiUrl.toString(), { headers });
 
     if (!response.ok) {
-      throw new Error(`Chicago API returned ${response.status}: ${await response.text()}`);
+      throw new Error(`Chicago API error: ${response.status}`);
     }
 
     const crimeData = await response.json();
@@ -118,7 +163,7 @@ serve(async (req) => {
 
         if (insertError) {
           errors += recordsToInsert.length;
-          errorDetails.push(`Batch ${i}-${i + batchSize}: ${insertError.message}`);
+          errorDetails.push(`Batch error`);
         } else {
           newRows += data?.length || 0;
         }
@@ -127,8 +172,7 @@ serve(async (req) => {
         await new Promise(resolve => setTimeout(resolve, 50));
       } catch (err) {
         errors += recordsToInsert.length;
-        const errorMsg = err instanceof Error ? err.message : String(err);
-        errorDetails.push(`Batch ${i}-${i + batchSize}: ${errorMsg}`);
+        errorDetails.push(`Processing error`);
       }
     }
 
@@ -167,18 +211,14 @@ serve(async (req) => {
         status: 200,
       }
     );
-  } catch (error) {
-    console.error("Ingestion error:", error);
-    const errorMsg = error instanceof Error ? error.message : String(error);
+  } catch (error: any) {
+    console.error('Ingestion error:', error);
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: errorMsg,
+      JSON.stringify({ 
+        success: false, 
+        error: 'Data ingestion failed. Please try again later.'
       }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

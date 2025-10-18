@@ -364,40 +364,40 @@ export async function getSystemHealth(): Promise<{
   return fetchAPI('/health');
 }
 
-// NEW: Live performance metrics from Edge Functions
+// NEW: Live performance metrics from Edge Functions - using authenticated invoke
 export async function fetchPerformanceHistory() {
-  const baseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const response = await fetch(`${baseUrl}/functions/v1/performance-metrics/history`);
-  if (!response.ok) throw new Error('Failed to fetch performance history');
-  return response.json();
+  const { data, error } = await supabase.functions.invoke('performance-metrics', {
+    body: { endpoint: 'history' }
+  });
+  if (error) throw error;
+  return data;
 }
 
 export async function fetchCurrentPerformance() {
-  const baseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const response = await fetch(`${baseUrl}/functions/v1/performance-metrics/current`);
-  if (!response.ok) throw new Error('Failed to fetch current performance');
-  return response.json();
+  const { data, error } = await supabase.functions.invoke('performance-metrics', {
+    body: { endpoint: 'current' }
+  });
+  if (error) throw error;
+  return data;
 }
 
 export async function fetchIngestionStatus() {
-  const baseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const response = await fetch(`${baseUrl}/functions/v1/performance-metrics/ingestion-status`);
-  if (!response.ok) throw new Error('Failed to fetch ingestion status');
-  return response.json();
+  const { data, error } = await supabase.functions.invoke('performance-metrics', {
+    body: { endpoint: 'ingestion-status' }
+  });
+  if (error) throw error;
+  return data;
 }
 
 export async function triggerDataIngestion() {
-  const baseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const response = await fetch(`${baseUrl}/functions/v1/ingest-crime-data`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ manual_trigger: true }),
+  const { data, error } = await supabase.functions.invoke('ingest-crime-data', {
+    body: { manual_trigger: true }
   });
-  if (!response.ok) throw new Error('Failed to trigger ingestion');
-  return response.json();
+  if (error) throw error;
+  return data;
 }
 
-// ML Prediction API
+// ML Prediction API - using authenticated invoke
 export async function makePredictionML(features: {
   primary_type: string;
   community_area: number;
@@ -407,52 +407,50 @@ export async function makePredictionML(features: {
   latitude: number;
   longitude: number;
 }) {
-  const baseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const response = await fetch(`${baseUrl}/functions/v1/ml-predict`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'predict', features }),
+  const { data, error } = await supabase.functions.invoke('ml-predict', {
+    body: { action: 'predict', features }
   });
-  if (!response.ok) throw new Error('Failed to generate prediction');
-  return response.json();
+  if (error) throw error;
+  return data;
 }
 
 export async function batchPredict() {
-  const baseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const response = await fetch(`${baseUrl}/functions/v1/ml-predict`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'batch_predict' }),
+  const { data, error } = await supabase.functions.invoke('ml-predict', {
+    body: { action: 'batch_predict' }
   });
-  if (!response.ok) throw new Error('Failed to batch predict');
-  return response.json();
+  if (error) throw error;
+  return data;
 }
 
-// Analytics API
+// Analytics API - using authenticated invoke
 export async function fetchGeoPredictions() {
-  const baseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const response = await fetch(`${baseUrl}/functions/v1/ml-analytics/geo-predictions`);
-  if (!response.ok) throw new Error('Failed to fetch geo predictions');
-  return response.json();
+  const { data, error } = await supabase.functions.invoke('ml-analytics', {
+    body: { endpoint: 'geo-predictions' }
+  });
+  if (error) throw error;
+  return data;
 }
 
 export async function fetchTimeline() {
-  const baseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const response = await fetch(`${baseUrl}/functions/v1/ml-analytics/timeline`);
-  if (!response.ok) throw new Error('Failed to fetch timeline');
-  return response.json();
+  const { data, error } = await supabase.functions.invoke('ml-analytics', {
+    body: { endpoint: 'timeline' }
+  });
+  if (error) throw error;
+  return data;
 }
 
 export async function fetchHotspots() {
-  const baseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const response = await fetch(`${baseUrl}/functions/v1/ml-analytics/hotspots`);
-  if (!response.ok) throw new Error('Failed to fetch hotspots');
-  return response.json();
+  const { data, error } = await supabase.functions.invoke('ml-analytics', {
+    body: { endpoint: 'hotspots' }
+  });
+  if (error) throw error;
+  return data;
 }
 
 export async function fetchTrends() {
-  const baseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const response = await fetch(`${baseUrl}/functions/v1/ml-analytics/trends`);
-  if (!response.ok) throw new Error('Failed to fetch trends');
-  return response.json();
+  const { data, error } = await supabase.functions.invoke('ml-analytics', {
+    body: { endpoint: 'trends' }
+  });
+  if (error) throw error;
+  return data;
 }
