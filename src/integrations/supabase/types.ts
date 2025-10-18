@@ -389,7 +389,36 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      community_feedback_public: {
+        Row: {
+          community_area: string | null
+          created_at: string | null
+          description: string | null
+          feedback_id: string | null
+          feedback_type: Database["public"]["Enums"]["feedback_type"] | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          community_area?: string | null
+          created_at?: string | null
+          description?: string | null
+          feedback_id?: string | null
+          feedback_type?: Database["public"]["Enums"]["feedback_type"] | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          community_area?: string | null
+          created_at?: string | null
+          description?: string | null
+          feedback_id?: string | null
+          feedback_type?: Database["public"]["Enums"]["feedback_type"] | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
