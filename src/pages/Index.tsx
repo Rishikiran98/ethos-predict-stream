@@ -7,6 +7,7 @@ import { GeographicView } from "@/components/dashboard/GeographicView";
 import { ModelPerformance } from "@/components/dashboard/ModelPerformance";
 import { AuditLog } from "@/components/dashboard/AuditLog";
 import { ExplainabilityView } from "@/components/dashboard/ExplainabilityView";
+import { CommunityFeedback } from "@/components/dashboard/CommunityFeedback";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -17,12 +18,13 @@ const Index = () => {
       
       <main className="container mx-auto px-4 py-6 space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-6 lg:w-auto">
+          <TabsList className="grid w-full grid-cols-7 lg:w-auto">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="fairness">Fairness</TabsTrigger>
             <TabsTrigger value="geography">Geography</TabsTrigger>
             <TabsTrigger value="performance">Performance</TabsTrigger>
             <TabsTrigger value="explain">Explainability</TabsTrigger>
+            <TabsTrigger value="feedback">Feedback</TabsTrigger>
             <TabsTrigger value="audit">Audit</TabsTrigger>
           </TabsList>
 
@@ -44,6 +46,10 @@ const Index = () => {
 
           <TabsContent value="explain" className="mt-6">
             <ExplainabilityView />
+          </TabsContent>
+
+          <TabsContent value="feedback" className="mt-6">
+            <CommunityFeedback />
           </TabsContent>
 
           <TabsContent value="audit" className="mt-6">
