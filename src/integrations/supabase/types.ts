@@ -103,6 +103,39 @@ export type Database = {
           },
         ]
       }
+      crime_stream: {
+        Row: {
+          arrest: boolean | null
+          case_number: string
+          community_area: number | null
+          date: string
+          inserted_at: string
+          latitude: number | null
+          longitude: number | null
+          primary_type: string
+        }
+        Insert: {
+          arrest?: boolean | null
+          case_number: string
+          community_area?: number | null
+          date: string
+          inserted_at?: string
+          latitude?: number | null
+          longitude?: number | null
+          primary_type: string
+        }
+        Update: {
+          arrest?: boolean | null
+          case_number?: string
+          community_area?: number | null
+          date?: string
+          inserted_at?: string
+          latitude?: number | null
+          longitude?: number | null
+          primary_type?: string
+        }
+        Relationships: []
+      }
       fairness_evaluations: {
         Row: {
           calibration_error: number
@@ -142,6 +175,42 @@ export type Database = {
           id?: string
           model_version?: string
           passed_thresholds?: boolean
+        }
+        Relationships: []
+      }
+      ingestion_log: {
+        Row: {
+          batch_id: string
+          created_at: string
+          duplicates: number | null
+          end_time: string | null
+          error_details: string | null
+          errors: number | null
+          id: string
+          new_rows: number | null
+          start_time: string
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          duplicates?: number | null
+          end_time?: string | null
+          error_details?: string | null
+          errors?: number | null
+          id?: string
+          new_rows?: number | null
+          start_time: string
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          duplicates?: number | null
+          end_time?: string | null
+          error_details?: string | null
+          errors?: number | null
+          id?: string
+          new_rows?: number | null
+          start_time?: string
         }
         Relationships: []
       }
@@ -186,6 +255,44 @@ export type Database = {
           version?: string
         }
         Relationships: []
+      }
+      performance_history: {
+        Row: {
+          created_at: string
+          data_period_end: string | null
+          data_period_start: string | null
+          evaluated_at: string
+          id: string
+          metrics: Json
+          model_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          data_period_end?: string | null
+          data_period_start?: string | null
+          evaluated_at?: string
+          id?: string
+          metrics: Json
+          model_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          data_period_end?: string | null
+          data_period_start?: string | null
+          evaluated_at?: string
+          id?: string
+          metrics?: Json
+          model_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "performance_history_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "model_artifacts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       predictions: {
         Row: {

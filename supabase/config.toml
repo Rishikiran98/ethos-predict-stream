@@ -1,1 +1,7 @@
 project_id = "feltwsxfnsvtnjqgmvie"
+
+[functions.ingest-crime-data]
+verify_jwt = false
+
+[functions.performance-metrics]
+verify_jwt = false
