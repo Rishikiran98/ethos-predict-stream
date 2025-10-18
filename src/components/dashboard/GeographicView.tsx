@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, TrendingUp, AlertTriangle } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import Plot from 'react-plotly.js';
@@ -11,10 +11,20 @@ const GeographicView = () => {
 
   // Fetch Chicago GeoJSON boundaries
   useEffect(() => {
-    fetch('/chicago-boundaries.geojson')
-      .then(res => res.json())
-      .then(data => setGeoData(data))
-      .catch(err => console.error('Failed to load GeoJSON:', err));
+    const loadGeo = async () => {
+      try {
+        const res = await fetch('/chicago-boundaries.geojson');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const text = await res.text();
+        const data = JSON.parse(text || '{"type":"FeatureCollection","features":[]}');
+        setGeoData(data);
+      } catch (err) {
+        console.error('Failed to load GeoJSON:', err);
+        // Fallback to empty collection so the map can still render
+        setGeoData({ type: 'FeatureCollection', features: [] });
+      }
+    };
+    loadGeo();
   }, []);
 
   // Fetch predictions from database
@@ -32,6 +42,20 @@ const GeographicView = () => {
     },
     refetchInterval: 30000, // Refresh every 30 seconds
   });
+
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    const channel = supabase
+      .channel('predictions-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'predictions' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['geographic-predictions'] });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   // Aggregate predictions by community area
   const hotspots = predictions?.reduce((acc: any[], pred) => {
@@ -106,17 +130,23 @@ const GeographicView = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
+          {!geoData ? (
             <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
               <div className="text-center space-y-2">
                 <MapPin className="h-12 w-12 text-muted-foreground mx-auto animate-pulse" />
-                <p className="text-sm text-muted-foreground">Loading predictions...</p>
+                <p className="text-sm text-muted-foreground">Loading map...</p>
               </div>
             </div>
-          ) : geoData && predictions && predictions.length > 0 ? (
-            <div className="w-full">
+          ) : (
+            <div className="w-full relative">
               <Plot
-                data={choroplethData}
+                data={(predictions && predictions.length > 0) ? choroplethData : [{
+                  type: 'scattermapbox',
+                  lat: [41.8781],
+                  lon: [-87.6298],
+                  mode: 'markers',
+                  marker: { size: 1, opacity: 0 }
+                }]}
                 layout={{
                   mapbox: {
                     style: 'open-street-map',
@@ -137,18 +167,13 @@ const GeographicView = () => {
                 useResizeHandler
                 style={{ width: '100%' }}
               />
-            </div>
-          ) : (
-            <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
-              <div className="text-center space-y-2">
-                <MapPin className="h-12 w-12 text-muted-foreground mx-auto" />
-                <p className="text-sm text-muted-foreground">
-                  No predictions yet
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Make a prediction to see it on the map
-                </p>
-              </div>
+              {(!predictions || predictions.length === 0) && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="px-3 py-1.5 rounded-md bg-background/80 border text-xs text-muted-foreground">
+                    No predictions yet — map is live and waiting for data
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </CardContent>
