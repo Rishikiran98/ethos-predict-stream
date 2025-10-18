@@ -396,3 +396,63 @@ export async function triggerDataIngestion() {
   if (!response.ok) throw new Error('Failed to trigger ingestion');
   return response.json();
 }
+
+// ML Prediction API
+export async function makePredictionML(features: {
+  primary_type: string;
+  community_area: number;
+  hour: number;
+  day_of_week: string;
+  month: number;
+  latitude: number;
+  longitude: number;
+}) {
+  const baseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const response = await fetch(`${baseUrl}/functions/v1/ml-predict`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'predict', features }),
+  });
+  if (!response.ok) throw new Error('Failed to generate prediction');
+  return response.json();
+}
+
+export async function batchPredict() {
+  const baseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const response = await fetch(`${baseUrl}/functions/v1/ml-predict`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'batch_predict' }),
+  });
+  if (!response.ok) throw new Error('Failed to batch predict');
+  return response.json();
+}
+
+// Analytics API
+export async function fetchGeoPredictions() {
+  const baseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const response = await fetch(`${baseUrl}/functions/v1/ml-analytics/geo-predictions`);
+  if (!response.ok) throw new Error('Failed to fetch geo predictions');
+  return response.json();
+}
+
+export async function fetchTimeline() {
+  const baseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const response = await fetch(`${baseUrl}/functions/v1/ml-analytics/timeline`);
+  if (!response.ok) throw new Error('Failed to fetch timeline');
+  return response.json();
+}
+
+export async function fetchHotspots() {
+  const baseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const response = await fetch(`${baseUrl}/functions/v1/ml-analytics/hotspots`);
+  if (!response.ok) throw new Error('Failed to fetch hotspots');
+  return response.json();
+}
+
+export async function fetchTrends() {
+  const baseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const response = await fetch(`${baseUrl}/functions/v1/ml-analytics/trends`);
+  if (!response.ok) throw new Error('Failed to fetch trends');
+  return response.json();
+}

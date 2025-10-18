@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.performance-metrics]
 verify_jwt = false
+
+[functions.ml-predict]
+verify_jwt = false
+
+[functions.ml-analytics]
+verify_jwt = false
