@@ -33,7 +33,7 @@ const Index = () => {
           </TabsList>
 
           <TabsContent value="overview" className="mt-6 space-y-6">
-            <MetricsOverview />
+            <MetricsOverview onNavigate={setActiveTab} />
           </TabsContent>
 
           <TabsContent value="fairness" className="mt-6">

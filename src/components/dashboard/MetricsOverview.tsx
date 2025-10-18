@@ -9,9 +9,10 @@ interface MetricCardProps {
   icon: React.ReactNode;
   trend: "up" | "down" | "neutral";
   description?: string;
+  onClick?: () => void;
 }
 
-const MetricCard = ({ title, value, change, icon, trend, description }: MetricCardProps) => {
+const MetricCard = ({ title, value, change, icon, trend, description, onClick }: MetricCardProps) => {
   const trendColor = trend === "up" 
     ? "text-success" 
     : trend === "down" 
@@ -21,7 +22,10 @@ const MetricCard = ({ title, value, change, icon, trend, description }: MetricCa
   const TrendIcon = trend === "up" ? TrendingUp : TrendingDown;
 
   return (
-    <Card>
+    <Card 
+      className={onClick ? "cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02]" : ""}
+      onClick={onClick}
+    >
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
         <div className="p-2 bg-primary/10 rounded-lg">{icon}</div>
@@ -41,7 +45,11 @@ const MetricCard = ({ title, value, change, icon, trend, description }: MetricCa
   );
 };
 
-export const MetricsOverview = () => {
+interface MetricsOverviewProps {
+  onNavigate: (tab: string) => void;
+}
+
+export const MetricsOverview = ({ onNavigate }: MetricsOverviewProps) => {
   return (
     <div className="space-y-6">
       {/* Key Performance Indicators */}
@@ -69,6 +77,7 @@ export const MetricsOverview = () => {
           trend="up"
           icon={<Scale className="h-4 w-4 text-success" />}
           description="F1 variance ≤0.07"
+          onClick={() => onNavigate("fairness")}
         />
         <MetricCard
           title="Memory Efficiency"
@@ -138,14 +147,17 @@ export const MetricsOverview = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card 
+          className="cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02]"
+          onClick={() => onNavigate("geography")}
+        >
           <CardHeader>
             <CardTitle className="text-base">Geographic Coverage</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">77</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Community areas analyzed
+              Community areas analyzed • Click to view map
             </p>
           </CardContent>
         </Card>
