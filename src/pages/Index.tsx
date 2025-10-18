@@ -4,6 +4,7 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { MetricsOverview } from "@/components/dashboard/MetricsOverview";
 import { FairnessPanel } from "@/components/dashboard/FairnessPanel";
 import { GeographicView } from "@/components/dashboard/GeographicView";
+import { CrimeMapView } from "@/components/dashboard/CrimeMapView";
 import { ModelPerformance } from "@/components/dashboard/ModelPerformance";
 import { AuditLog } from "@/components/dashboard/AuditLog";
 import { ExplainabilityView } from "@/components/dashboard/ExplainabilityView";
@@ -13,7 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
   const { userRole } = useAuth();
-  const [activeTab, setActiveTab] = useState("geography");
+  const [activeTab, setActiveTab] = useState("fairness");
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
@@ -22,8 +23,8 @@ const Index = () => {
       <main className="container mx-auto px-4 py-6 space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-6 lg:grid-cols-8 lg:w-auto">
-            <TabsTrigger value="geography">Live Map</TabsTrigger>
             <TabsTrigger value="fairness">Fairness</TabsTrigger>
+            <TabsTrigger value="geography">Crime Map</TabsTrigger>
             {userRole && <TabsTrigger value="feedback">Report Crime</TabsTrigger>}
             {userRole === 'admin' && <TabsTrigger value="performance">Performance</TabsTrigger>}
             {userRole === 'admin' && <TabsTrigger value="explain">Explainability</TabsTrigger>}
@@ -31,12 +32,12 @@ const Index = () => {
             {userRole === 'admin' && <TabsTrigger value="admin">Admin</TabsTrigger>}
           </TabsList>
 
-          <TabsContent value="geography" className="mt-6">
-            <GeographicView />
-          </TabsContent>
-
           <TabsContent value="fairness" className="mt-6">
             <FairnessPanel onNavigate={setActiveTab} />
+          </TabsContent>
+
+          <TabsContent value="geography" className="mt-6">
+            <CrimeMapView />
           </TabsContent>
 
           {userRole && (
