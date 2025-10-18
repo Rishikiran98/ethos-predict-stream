@@ -12,6 +12,7 @@ import { CommunityFeedback } from "@/components/dashboard/CommunityFeedback";
 import { AdminPanel } from "@/components/dashboard/AdminPanel";
 import { PredictiveAnalytics } from "@/components/dashboard/PredictiveAnalytics";
 import { AnalyticsView } from "@/components/dashboard/AnalyticsView";
+import { AIModelPerformance } from "@/components/dashboard/AIModelPerformance";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
@@ -24,12 +25,13 @@ const Index = () => {
       
       <main className="container mx-auto px-4 py-6 space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-6 lg:grid-cols-8 lg:w-auto">
+          <TabsList className="grid w-full grid-cols-6 lg:grid-cols-9 lg:w-auto">
             <TabsTrigger value="fairness">Fairness</TabsTrigger>
             <TabsTrigger value="geography">Crime Map</TabsTrigger>
             <TabsTrigger value="predict">AI Predict</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             {userRole && <TabsTrigger value="feedback">Report Crime</TabsTrigger>}
+            {userRole === 'admin' && <TabsTrigger value="ai-models">AI Models</TabsTrigger>}
             {userRole === 'admin' && <TabsTrigger value="performance">Performance</TabsTrigger>}
             {userRole === 'admin' && <TabsTrigger value="explain">Explainability</TabsTrigger>}
             {userRole === 'admin' && <TabsTrigger value="audit">Audit</TabsTrigger>}
@@ -60,6 +62,10 @@ const Index = () => {
 
           {userRole === 'admin' && (
             <>
+              <TabsContent value="ai-models" className="mt-6">
+                <AIModelPerformance />
+              </TabsContent>
+
               <TabsContent value="performance" className="mt-6">
                 <ModelPerformance />
               </TabsContent>

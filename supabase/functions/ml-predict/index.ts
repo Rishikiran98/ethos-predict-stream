@@ -135,7 +135,18 @@ serve(async (req) => {
         );
       }
       
-      // Generate prediction using Lovable AI
+      // Get the best AI model for this crime type and area
+      const { data: bestModel, error: modelError } = await supabase
+        .rpc('get_best_ai_model', {
+          p_crime_type: features.primary_type,
+          p_community_area: features.community_area?.toString()
+        });
+      
+      const selectedModel = bestModel || 'google/gemini-2.5-flash';
+      const startTime = Date.now();
+      console.log(`Using AI model: ${selectedModel} for ${features.primary_type}`);
+      
+      // Generate prediction using Lovable AI with selected model
       const prompt = `You are an expert crime analyst. Analyze this crime incident and predict the arrest probability.
 
 Crime Features:
@@ -161,36 +172,80 @@ Return ONLY a JSON object with this structure:
   "explanation": "brief explanation"
 }`;
 
-      const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${lovableApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'google/gemini-2.5-flash',
-          messages: [{ role: 'user', content: prompt }],
-          temperature: 0.3,
-        }),
-      });
-
-      if (!aiResponse.ok) {
-        console.error('AI API error:', aiResponse.status);
-        throw new Error('AI service unavailable');
-      }
-
-      const aiData = await aiResponse.json();
-      const rawContent = aiData.choices[0].message.content;
+      let prediction: any = null;
+      let modelUsed = selectedModel;
+      let attemptCount = 0;
+      const maxAttempts = 2;
       
-      // Parse JSON from response (handle markdown code blocks)
-      let prediction;
-      try {
-        const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
-        prediction = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(rawContent);
-      } catch (e) {
-        console.error('Failed to parse AI response');
-        throw new Error('Invalid prediction format');
+      // Try with selected model, fallback to flash if it fails
+      while (attemptCount < maxAttempts && !prediction) {
+        attemptCount++;
+        
+        try {
+          const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${lovableApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: modelUsed,
+              messages: [{ role: 'user', content: prompt }],
+              temperature: 0.3,
+            }),
+          });
+
+          if (!aiResponse.ok) {
+            console.error(`AI API error with ${modelUsed}:`, aiResponse.status);
+            if (attemptCount < maxAttempts && modelUsed !== 'google/gemini-2.5-flash') {
+              modelUsed = 'google/gemini-2.5-flash'; // Fallback
+              continue;
+            }
+            throw new Error('AI service unavailable');
+          }
+
+          const aiData = await aiResponse.json();
+          const rawContent = aiData.choices[0].message.content;
+          
+          // Parse JSON from response (handle markdown code blocks)
+          const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
+          prediction = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(rawContent);
+          
+        } catch (e) {
+          console.error(`Attempt ${attemptCount} failed with ${modelUsed}:`, e);
+          if (attemptCount < maxAttempts && modelUsed !== 'google/gemini-2.5-flash') {
+            modelUsed = 'google/gemini-2.5-flash'; // Fallback
+          } else {
+            throw e;
+          }
+        }
       }
+      
+      if (!prediction) {
+        throw new Error('Failed to generate prediction');
+      }
+      
+      const responseTime = Date.now() - startTime;
+      
+      // Track model performance (fire and forget - don't block response)
+      supabase
+        .from('ai_model_performance')
+        .upsert({
+          model_name: modelUsed,
+          crime_type: features.primary_type,
+          community_area: features.community_area?.toString() || null,
+          avg_confidence: prediction.confidence,
+          success_count: 1,
+          avg_response_time_ms: responseTime,
+          last_used_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'model_name,crime_type,community_area'
+        })
+        .then(
+          () => console.log(`Performance tracked for ${modelUsed}`),
+          (err) => console.error('Failed to track performance:', err)
+        );
 
       // Store prediction in database
       const { data: savedPrediction, error: saveError } = await supabase
